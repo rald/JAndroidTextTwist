@@ -10,10 +10,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 // import android.graphics.Rect;
 
-import android.media.AudioAttributes;
-//import android.media.AudioManager;
-//import android.media.MediaPlayer;
-import android.media.SoundPool;
+import android.media.MediaPlayer;
 
 import android.view.View;
 import android.view.MotionEvent;
@@ -116,33 +113,14 @@ public class Animation extends View {
 
 	int[] lastWordIndex=null;
 
+	MediaPlayer mp;
+
 	int wordListOffset;
 	int delay;
 	boolean gameover;
 
 	boolean qualified=false;
 
-	AudioAttributes attrs = new AudioAttributes.Builder()
-	        .setUsage(AudioAttributes.USAGE_GAME)
-	        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-	        .build();
-
-	SoundPool sp = new SoundPool.Builder()
-	        .setMaxStreams(6)
-	        .setAudioAttributes(attrs)
-	        .build();
-
-//	SoundPool sp = new SoundPool(6,AudioManager.STREAM_MUSIC,0);
-	int[] soundId=new int[6];
-
-
-	final int 	SOUND_CHOOSE_LETTER=0,
-				SOUND_SLIDE_LETTER=1,
-				SOUND_CLOCK_TICK=2,
-				SOUND_TIME_UP=3,
-				SOUND_LONG_WORD=4,
-				SOUND_COMPLETE=5,
-				SOUND_MAX=6;
 
 	public Animation(Context context) {
 
@@ -180,13 +158,6 @@ public class Animation extends View {
 		up_button_down=BitmapFactory.decodeResource(context.getResources(),R.drawable.up_button_down);
 		down_button_down=BitmapFactory.decodeResource(context.getResources(),R.drawable.down_button_down);
 		close_button_down=BitmapFactory.decodeResource(context.getResources(),R.drawable.close_button_down);
-
-		soundId[SOUND_CHOOSE_LETTER]=sp.load(context,R.raw.choose_letter,1);
-		soundId[SOUND_SLIDE_LETTER]=sp.load(context,R.raw.slide_letter,1);
-		soundId[SOUND_TIME_UP]=sp.load(context,R.raw.time_up,1);
-		soundId[SOUND_CLOCK_TICK]=sp.load(context,R.raw.clock_tick,1);
-		soundId[SOUND_LONG_WORD]=sp.load(context,R.raw.long_word,1);
-		soundId[SOUND_COMPLETE]=sp.load(context,R.raw.complete,1);
 
 		Ball.font=font;
 		Ball.bitmap=big_ball;
@@ -300,6 +271,8 @@ public class Animation extends View {
 			if(!qualified) score=0;
 			qualified=false;
 
+			mp=null;
+
 			gameState=GameState.GAME_PLAY;
 		}
 
@@ -372,7 +345,7 @@ public class Animation extends View {
 								balls[i].containerIndex=boxIndex;
 								boxes[boxIndex].ballIndex=i;
 								boxIndex++;
-								playSound(SOUND_CHOOSE_LETTER);
+								playSound(R.raw.choose_letter);
 								break;
 							}
 						}
@@ -412,7 +385,7 @@ public class Animation extends View {
 					}
 
 					if(isSlide) {
-						playSound(SOUND_SLIDE_LETTER);
+						playSound(R.raw.slide_letter);
 					}
 
 				}
@@ -522,12 +495,12 @@ public class Animation extends View {
 		long remainingSecs=min*60+sec;
 		if(remainingSecs!=prevRemainingSecs) {
 			if(remainingSecs==0) {
-				playSound(SOUND_TIME_UP);
+				playSound(R.raw.time_up);
 				clearAllLetter();
 				gameover=true;
 				gameState=GameState.GAME_WORDLIST;
 			} else if(remainingSecs<10) {
-				playSound(SOUND_CLOCK_TICK);
+				playSound(R.raw.clock_tick);
 			}
 		}
 		prevRemainingSecs=remainingSecs;
@@ -690,23 +663,30 @@ public class Animation extends View {
 				}
 
 				if(numGuessed==words.length) {
-					playSound(SOUND_LONG_WORD);
+					playSound(R.raw.long_word);
 					gameover=true;
 					gameState=GameState.GAME_WORDLIST;
 					qualified=true;
 				} else if(words[j].length()==word.length()) {
-					playSound(SOUND_LONG_WORD);
+					playSound(R.raw.long_word);
 					qualified=true;
 				} else {
-					playSound(SOUND_COMPLETE);
+					playSound(R.raw.complete);
 				}
 
 			}
 		}
 	}
 
-	public void playSound(int id) {
-		sp.play(soundId[id], 1.0f, 1.0f, 1, 0, 1.0f);
+	public void playSound(int resId) {
+		if(mp!=null) {
+			mp.stop();
+			mp.release();
+		}
+		mp=MediaPlayer.create(context,resId);
+		if(mp!=null) {
+			mp.start();
+		}
 	}
 
 }
